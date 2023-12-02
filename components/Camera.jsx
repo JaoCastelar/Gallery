@@ -4,6 +4,7 @@ import { Button, StyleSheet, Text, TouchableOpacity, View, Dimensions, Image } f
 import IconButton from './IconButton';
 import { useNavigation } from '@react-navigation/native';
 import { FotoProvider, useFotos } from './PickContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,18 +46,29 @@ export default function ExemploCamera( {route} ) {
             setNovaFotoNome('');
         }
         
-        const salvarFoto = () => {
-            addFoto(nomeAlbum, novaFotoNome);
-            setNovaFotoNome('');
-            navigation.navigate('Album', {nomeAlbum: nomeAlbum, fotosP: novaFotoNome});
-        }
-
+        const salvarFoto = async () => {
+            try {
+                const fotosSalvas = await AsyncStorage.getItem(`photos_${nomeAlbum}`);
+                const fotosArray = fotosSalvas ? JSON.parse(fotosSalvas) : [];
+                fotosArray.push(novaFotoNome);
+                
+                await AsyncStorage.setItem(`photos_${nomeAlbum}`, JSON.stringify(fotosArray));
+                
+                addFoto(nomeAlbum, novaFotoNome);
+                setNovaFotoNome('');
+                
+                navigation.navigate('Album', { nomeAlbum: nomeAlbum, fotosP: novaFotoNome });
+            } catch (error) {
+                console.error('Erro ao salvar a foto:', error);
+            }
+        };          
+        
         if ( foto !== null ) {
             return (
                 <View style={styles2.container}>
                 <View>
                 <TouchableOpacity style={styles2.photoContainer}>
-                    <Image source={{ uri: foto.uri }} width={(width/foto.width) * foto.width} height={(width/foto.width) * foto.height} />
+                <Image source={{ uri: foto.uri }} width={(width/foto.width) * foto.width} height={(width/foto.width) * foto.height} />
                 </TouchableOpacity>
                 </View>
                 <View style={styles2.buttonContainer}>
